@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ME Board Exam Master Reviewer (1 - 2499)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --correct: #22c55e;
+      --wrong: #ef4444;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; display: flex; justify-content: center; }
+    .app { max-width: 900px; width: 100%; }
+
+    header { text-align: center; margin-bottom: 25px; }
+    h1 { color: var(--accent); font-size: 1.8rem; margin-bottom: 8px; }
+    p { color: #94a3b8; font-size: 0.95rem; }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+    .tab-btn { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+    .tab-btn.active, .tab-btn:hover { border-color: var(--accent); background: #334155; color: var(--accent); }
+
+    .score-bar { background: var(--card-bg); padding: 12px 20px; border-radius: 10px; display: flex; justify-content: space-between; border: 1px solid var(--border); margin-bottom: 15px; font-weight: 600; }
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    select, button { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; }
+    
+    .card { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+    .q-text { font-size: 1.15rem; line-height: 1.6; margin-bottom: 20px; font-weight: 500; }
+
+    /* Flashcard Mode */
+    .flashcard { min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; border: 2px dashed var(--accent); border-radius: 10px; padding: 20px; margin-bottom: 20px; background: #0f172a; }
+    .flashcard .answer-box { margin-top: 15px; padding: 10px; background: #1e293b; border-radius: 6px; color: var(--correct); font-size: 1.1rem; font-weight: bold; }
+
+    /* Quiz Mode */
+    .options { display: grid; gap: 10px; }
+    .opt-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid var(--border); padding: 12px 16px; border-radius: 8px; color: var(--text); font-size: 0.95rem; cursor: pointer; }
+    .opt-btn:hover { border-color: var(--accent); }
+    .opt-btn.correct { background: #14532d !important; border-color: var(--correct) !important; color: #86efac; }
+    .opt-btn.wrong { background: #7f1d1d !important; border-color: var(--wrong) !important; color: #fca5a5; }
+
+    .explanation { margin-top: 20px; padding: 15px; background: #0f172a; border-left: 4px solid var(--accent); border-radius: 4px; font-size: 0.95rem; line-height: 1.5; color: #cbd5e1; }
+
+    .nav-btns { display: flex; justify-content: space-between; margin-top: 20px; }
+    .primary-btn { background: var(--accent); color: #0f172a; font-weight: bold; border: none; }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <header>
+      <h1>ME Board Exam Reviewer</h1>
+      <p>Interactive Flashcards & Quizzer (Items 1 - 2499)</p>
+    </header>
+
+    <!-- Set Selection Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="setSet(0, 500)">Set 1 (1-500)</button>
+      <button class="tab-btn" onclick="setSet(500, 1000)">Set 2 (501-1000)</button>
+      <button class="tab-btn" onclick="setSet(1000, 1500)">Set 3 (1001-1500)</button>
+      <button class="tab-btn" onclick="setSet(1500, 2000)">Set 4 (1501-2000)</button>
+      <button class="tab-btn" onclick="setSet(2000, 2499)">Set 5 (2001-2499)</button>
+      <button class="tab-btn" onclick="setSet(0, 2499)">Full Quizlet (1-2499)</button>
+    </div>
+
+    <div class="score-bar">
+      <div>Item: <span id="item-num">1</span> / <span id="total-items">500</span></div>
+      <div>Mode: 
+        <select id="mode-select" onchange="toggleMode()">
+          <option value="quiz">Quiz Mode</option>
+          <option value="flashcard">Flashcard Mode</option>
+        </select>
+      </div>
+      <div>Score: <span id="score-val">0</span></div>
+    </div>
+
+    <div class="controls">
+      <select id="jump-select" onchange="jumpTo(this.value)"></select>
+      <button onclick="resetCurrentSet()">Reset Set</button>
+    </div>
+
+    <div class="card">
+      <div id="quiz-view">
+        <div class="q-text" id="q-text">Loading question...</div>
+        <div class="options" id="opt-container"></div>
+        <div class="explanation" id="explanation-box" style="display:none;"></div>
+      </div>
+
+      <div id="flashcard-view" style="display:none;">
+        <div class="flashcard" onclick="flipCard()">
+          <div class="q-text" id="fc-q">Question Text</div>
+          <div id="fc-hint" style="color:#64748b; font-size:0.85rem; margin-top:10px;">(Click to reveal answer & explanation)</div>
+          <div class="answer-box" id="fc-a" style="display:none;">Answer</div>
+        </div>
+        <div class="explanation" id="fc-exp" style="display:none;"></div>
+      </div>
+
+      <div class="nav-btns">
+        <button onclick="prevItem()">Previous</button>
+        <button class="primary-btn" onclick="nextItem()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample structure mapping - Paste your extracted data array here
+    const fullDataset = [
+      {
+        q: "1. Is the most common dryer used which consist of rotating cylinder inside which the materials flow while getting in contact with hot gas.",
+        opts: ["Tower dryer", "Centrifugal dryer", "Tray dryer", "Rotary dryer"],
+        ans: 3,
+        exp: "Ang tamang sagot ay Rotary Dryer. Ang rotary dryer ay binubuo ng isang nakahilig at umiikot na silindro (rotating cylinder) kung saan dumadaan ang materyales habang direktang nakak ad sa mainit na gas upang matuyo."
+      },
+      {
+        q: "2. Is the ratio of the mass of water-vapor in air and the mass of air if it is saturated is called:",
+        opts: ["Humidity ratio", "Mass ratio", "Vapor ratio", "Relative humidity"],
+        ans: 3,
+        exp: "Ang Relative Humidity ay ang nisyon ng kasalukuyang mass ng water vapor sa hangin kumpara sa mass ng water vapor kapag ito ay ganap na saturated sa kaparehong temperatura at presyon."
+      },
+      {
+        q: "3. The hands feel painfully cold when the skin temperature reaches",
+        opts: ["8 deg C", "10 deg C", "12 deg C", "14 deg C"],
+        ans: 1,
+        exp: "Ayon sa human thermal comfort at physiological standards, nararamdaman ang matinding sakit at lamig kapag ang temperatura ng balat ay bumaba sa 10°C (50°F)."
+      },
+      {
+        q: "4. The refrigerant used in steam jet cooling is:",
+        opts: ["Steam", "R-11", "Ammonia", "Water"],
+        ans: 3,
+        exp: "Tubig (Water) ang mismong ginagamit na refrigerant sa steam jet refrigeration systems, kung saan nagkakaroon ng paglamig sa pamamagitan ng flash evaporation sa ilalim ng napakababang vacuum pressure."
+      },
+      {
+        q: "5. The total heat of the air is a function of",
+        opts: ["WB temperature", "DP temperature", "DB temperature", "WB depression"],
+        ans: 0,
+        exp: "Ang kabuuang init (enthalpy) ng hangin ay direktang nakadepende at nakabase sa Wet Bulb (WB) temperature nito sa psychrometric chart."
+      }
+      // Pwede mong idagdag o i-import ang natitirang mga items sa parehong format
+    ];
+
+    let currentSetStart = 0;
+    let currentSetEnd = 500;
+    let activeIndex = 0;
+    let mode = 'quiz';
+    let userAnswers = {};
+    let score = 0;
+    let isFlipped = false;
+
+    function getActiveQuestions() {
+      return fullDataset.slice(currentSetStart, Math.min(currentSetEnd, fullDataset.length));
+    }
+
+    function setSet(start, end) {
+      currentSetStart = start;
+      currentSetEnd = end;
+      activeIndex = 0;
+      userAnswers = {};
+      score = 0;
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.remove('active'));
+      event.target.classList.add('active');
+      initSet();
+    }
+
+    function initSet() {
+      const activeQ = getActiveQuestions();
+      document.getElementById('total-items').textContent = activeQ.length;
+      document.getElementById('score-val').textContent = score;
+
+      const select = document.getElementById('jump-select');
+      select.innerHTML = '';
+      activeQ.forEach((_, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Item ${currentSetStart + i + 1}`;
+        select.appendChild(opt);
+      });
+
+      render();
+    }
+
+    function render() {
+      const activeQ = getActiveQuestions();
+      const item = activeQ[activeIndex];
+      document.getElementById('item-num').textContent = currentSetStart + activeIndex + 1;
+      document.getElementById('jump-select').value = activeIndex;
+
+      if (mode === 'quiz') {
+        document.getElementById('quiz-view').style.display = 'block';
+        document.getElementById('flashcard-view').style.display = 'none';
+
+        document.getElementById('q-text').textContent = item.q;
+        const container = document.getElementById('opt-container');
+        container.innerHTML = '';
+
+        const expBox = document.getElementById('explanation-box');
+        expBox.style.display = 'none';
+
+        item.opts.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = `${String.fromCharCode(65 + idx)}. ${opt}`;
+
+          if (userAnswers[activeIndex] !== undefined) {
+            if (idx === item.ans) btn.classList.add('correct');
+            if (userAnswers[activeIndex] === idx && idx !== item.ans) btn.classList.add('wrong');
+            btn.disabled = true;
+            expBox.style.display = 'block';
+            expBox.innerHTML = `<strong>Paliwanag:</strong> ${item.exp || 'Walang karagdagang paliwanag.'}`;
+          } else {
+            btn.onclick = () => selectAnswer(idx);
+          }
+          container.appendChild(btn);
+        });
+
+      } else {
+        document.getElementById('quiz-view').style.display = 'none';
+        document.getElementById('flashcard-view').style.display = 'block';
+
+        document.getElementById('fc-q').textContent = item.q;
+        document.getElementById('fc-a').textContent = `Tamang Sagot: ${String.fromCharCode(65 + item.ans)}. ${item.opts[item.ans]}`;
+        document.getElementById('fc-exp').innerHTML = `<strong>Paliwanag:</strong> ${item.exp || 'Walang karagdagang paliwanag.'}`;
+
+        isFlipped = false;
+        document.getElementById('fc-a').style.display = 'none';
+        document.getElementById('fc-exp').style.display = 'none';
+        document.getElementById('fc-hint').style.display = 'block';
+      }
+    }
+
+    function selectAnswer(selected) {
+      const activeQ = getActiveQuestions();
+      userAnswers[activeIndex] = selected;
+      if (selected === activeQ[activeIndex].ans) {
+        score++;
+        document.getElementById('score-val').textContent = score;
+      }
+      render();
+    }
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      document.getElementById('fc-a').style.display = isFlipped ? 'block' : 'none';
+      document.getElementById('fc-exp').style.display = isFlipped ? 'block' : 'none';
+      document.getElementById('fc-hint').style.display = isFlipped ? 'none' : 'block';
+    }
+
+    function toggleMode() {
+      mode = document.getElementById('mode-select').value;
+      render();
+    }
+
+    function nextItem() {
+      const activeQ = getActiveQuestions();
+      if (activeIndex < activeQ.length - 1) { activeIndex++; render(); }
+    }
+
+    function prevItem() {
+      if (activeIndex > 0) { activeIndex--; render(); }
+    }
+
+    function jumpTo(idx) {
+      activeIndex = parseInt(idx);
+      render();
+    }
+
+    function resetCurrentSet() {
+      userAnswers = {};
+      score = 0;
+      activeIndex = 0;
+      document.getElementById('score-val').textContent = score;
+      render();
+    }
+
+    initSet();
+  </script>
+</body>
+</html>
